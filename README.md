@@ -1,30 +1,25 @@
 # BasedNode Installation Guide
 
-> Installs the community-maintained [BF1337/basednode](https://github.com/BF1337/basednode) fork (not the original repo).
+> Installs [BF1337/basednode](https://github.com/BF1337/basednode),  
+> an improved, community-maintained fork of the original [getbasedai/basednode](https://github.com/getbasedai/basednode).
 
-Welcome to the **BasedNode Unofficial Install Guide**—ideal for beginners, local testing, or anyone just curious about running a node on Windows.
+Run a BasedNode easily on **Ubuntu with WSL (Windows Subsystem for Linux)**—ideal for Windows users, beginners, or anyone just curious.
 
-This guide helps you install and run a BasedNode on **Ubuntu under WSL (Windows Subsystem for Linux)**.  
-Perfect for Windows users new to Linux.
-
-Typical install time: **~42 minutes**.
+Typical install time: **~42 minutes**
 
 ---
 
 ## 🚀 Why WSL?
 
-- Run Ubuntu directly inside Windows
+- Run Ubuntu inside Windows
 - No virtual machines needed
 - Easier setup—less security/config headaches for testing
-- Great for local tests and learning
 
 ⚠️ **Note:**  
-This script does **not** expose the node's RPC port to the public internet.  
-For testing and learning, it’s safe to run your node locally for several days on WSL—**as long as you don’t modify the script to open RPC to the outside**.
+This script keeps the node's RPC private—safe for local testing on WSL, as long as you don’t modify the script to open RPC to the outside.
 
-If you change the node’s configuration or open ports to the network,  
-make sure you understand security best practices before going further.  
-For 24/7 or public nodes, using a VPS or dedicated server is strongly recommended.
+If you change the node’s config or open ports, learn about security best practices first.  
+For 24/7 or public nodes, use a VPS or dedicated server.
 
 ---
 
@@ -39,10 +34,10 @@ For 24/7 or public nodes, using a VPS or dedicated server is strongly recommende
 
 ## ✅ How to run the install script
 
-Once Ubuntu is installed and running, refer to the `basednode_install.sh` script for all installation steps.
+In Ubuntu, run the `basednode_install.sh` script to install and set up your node.
 
 ---
 
 Happy syncing!
 
-_Author: frenciscus_0x2A_
+\_Author: frenciscus_0x2A
