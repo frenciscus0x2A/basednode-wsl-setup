@@ -32,9 +32,9 @@ For 24/7 or public nodes, use a VPS or dedicated server.
 
 ---
 
-## ✅ How to run the install script
+## ✅ How to install the node
 
-In Ubuntu, run the `basednode_install.sh` script to install and set up your node.
+Follow the instructions in `basednode_install.sh`.
 
 ---
 
