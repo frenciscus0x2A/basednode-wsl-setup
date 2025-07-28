@@ -25,7 +25,7 @@ For 24/7 or public nodes, use a VPS or dedicated server.
 
 ## ✅ How to install Ubuntu (WSL)
 
-1. Open the **Microsoft Store** and search for **Ubuntu 22.04 LTS** (any sub-version is OK).
+1. Open the **Microsoft Store** and search for **Ubuntu 22.04 LTS** (any 22.04.x sub-version is OK).
 2. Click **Install**.
 3. Launch Ubuntu from the Start menu.
 4. Choose a Linux username and password.
