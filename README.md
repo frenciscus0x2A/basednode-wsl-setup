@@ -40,4 +40,4 @@ Follow the instructions in `basednode_install.sh`.
 
 Happy syncing!
 
-\_Author: frenciscus_0x2A
+Author: frenciscus_0x2A
