@@ -79,35 +79,52 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "STEP 3 — Installing Rust toolchain (nightly required)…"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Download rustup-init script
+# Cleanup any previous installer/log
+rm -f rustup-init.sh rustup-install.log
+
+# Download installer
 curl -sSf -o rustup-init.sh https://sh.rustup.rs
 chmod +x rustup-init.sh
 
-# Install Rust nightly non-interactively
-if ! ./rustup-init.sh -y --default-toolchain nightly --no-modify-path; then
-    echo "❌ Rust installation failed."
-    rm -f rustup-init.sh
+MAX_ATTEMPTS=3
+LOG_FILE="rustup-install.log"
+SUCCESS=false
+
+for attempt in $(seq 1 $MAX_ATTEMPTS); do
+    echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
+    if ./rustup-init.sh -y --default-toolchain nightly --no-modify-path >"$LOG_FILE" 2>&1; then
+        SUCCESS=true
+        break
+    else
+        echo "❌ Attempt $attempt failed. Retrying in 10s…"
+        sleep 10
+    fi
+done
+
+rm -f rustup-init.sh
+
+if ! $SUCCESS; then
+    echo ""
+    echo "🚨 Rust install failed after $MAX_ATTEMPTS attempts."
+    echo "Most issues are network-related. Try again later."
+    echo "See 'rustup-install.log' for error details."
     exit 1
 fi
 
-# Clean up installer
-rm -f rustup-init.sh
-
-# Ensure ~/.cargo/env is sourced to load Cargo into PATH
+# Add Rust to PATH for future sessions
 if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
     echo 'source $HOME/.cargo/env' >> ~/.bashrc
 fi
-
-# Source cargo env right now for this session
 source "$HOME/.cargo/env"
 
-# Check if cargo is available
+# Verify Cargo is available
 if ! command -v cargo >/dev/null 2>&1; then
-    echo "❌ Cargo not found in PATH even after sourcing env. Exiting."
+    echo "❌ Rust installed, but 'cargo' not found."
+    echo "Try closing/reopening your terminal, then rerun this script."
     exit 1
 fi
 
-echo "✅ Rust nightly toolchain installed and environment loaded."
+echo "✅ Rust nightly installed and ready."
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
