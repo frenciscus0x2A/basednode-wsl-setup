@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 trap 'echo ""; echo "⚠️ Script interrupted. Exiting safely."; exit 1' INT
 
@@ -172,7 +172,7 @@ else
         echo "Check your network connection, or try again later."
         exit 1
     fi
-    cd basednode
+    cd basednode    
 fi
 
 # --- PATCH: Ensure correct Rust nightly & WASM target are installed before build ---
@@ -333,4 +333,14 @@ echo "→ Run the following to launch BasedNode again:"
 echo "     basednode-run"
 echo ""
 echo "🎉 Installation finished. Happy syncing!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ QUICK CHECK: Is your node visible on the network?"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "→ When you see a line like:"
+echo "   🔍 Discovered new external address.../p2p/YourPeerId"
+echo "→ Go to https://explorer.getbased.ai/#/explorer/node"
+echo "→ Find your PeerId in the list to confirm your node is live!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
