@@ -175,12 +175,26 @@ else
     cd basednode
 fi
 
+# --- PATCH: Ensure correct Rust nightly & WASM target are installed before build ---
+# Detect the toolchain required (either "nightly" or eg. "nightly-2025-01-07")
+NIGHTLY_VERSION=$(rustup show active-toolchain 2>/dev/null | grep nightly | cut -d' ' -f1)
+if [ -z "$NIGHTLY_VERSION" ]; then
+    # Fallback: use first installed nightly if not active yet
+    NIGHTLY_VERSION=$(rustup toolchain list | grep nightly | head -1 | cut -d' ' -f1)
+    [ -z "$NIGHTLY_VERSION" ] && NIGHTLY_VERSION="nightly"
+fi
+echo "Ensuring WASM target is installed for Rust toolchain: $NIGHTLY_VERSION…"
+if ! rustup target list --toolchain $NIGHTLY_VERSION | grep -q 'wasm32-unknown-unknown (installed)'; then
+    rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY_VERSION
+fi
+# -----------------------------------------------------------------------------
+
 cargo clean
 echo "Building BasedNode… (this may take several minutes)"
 
 MAX_BUILD_ATTEMPTS=3
 for attempt in $(seq 1 $MAX_BUILD_ATTEMPTS); do
-    if cargo +nightly build --release | tee ~/basednode_build.log; then
+    if cargo +$NIGHTLY_VERSION build --release | tee ~/basednode_build.log; then
         echo "✅ Build finished."
         break
     else
@@ -192,7 +206,7 @@ done
 if [ ! -f ./target/release/basednode ]; then
     echo "❌ Build failed after $MAX_BUILD_ATTEMPTS attempts."
     echo "Check your network connection, then try:"
-    echo "    cargo +nightly build --release"
+    echo "    cargo +$NIGHTLY_VERSION build --release"
     echo "See '~/basednode_build.log' for more details."
     exit 1
 fi
@@ -216,11 +230,30 @@ BACKUP_FILE=~/.bashrc.bak.$(date +%Y%m%d%H%M%S)
 cp ~/.bashrc "$BACKUP_FILE"
 echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 
-if sed --version >/dev/null 2>&1; then
-    sed -i '/alias basednode-run/d' ~/.bashrc
-else
-    sed -i '' '/alias basednode-run/d' ~/.bashrc
-fi
+cat <<'EOF' >> ~/.bashrc
+
+# === BasedNode aliases ===
+alias basednode-run='~/basednode/target/release/basednode \
+  --name "MyBasedNode" \
+  --chain ~/basednode/mainnet1_raw.json \
+  --rpc-methods Safe \
+  --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
+  --log info 2>&1 | grep -Ev "Successfully ran block step.|Not the block to update emission values."'
+alias stop-node='pkill -f basednode && echo Node stopped.'
+alias restart-node='stop-node; basednode-run'
+alias node-logs='tail -f ~/basednode/basednode.log'
+alias check-health='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_health","params":[]}'\'' | jq'
+alias check-peers='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_peers","params":[]}'\'' | jq'
+alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}'\'' | jq'
+alias check-version='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_version","params":[]}'\'' | jq'
+alias check-authorities='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"author_pendingExtrinsics","params":[]}'\'' | jq'
+# ========================
+EOF
+
+# Reload aliases in current session (only for this shell, full reload on next shell)
+source ~/.bashrc
+
+echo "✅ Aliases added."
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -229,17 +262,17 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 echo "✅ Your BasedNode is about to start in the foreground."
 echo ""
-echo "⚠️ IMPORTANT:"
+echo "⚠️  IMPORTANT:"
 echo "→ As long as BasedNode runs in foreground, your terminal is LOCKED on its logs."
 echo ""
 echo "→ To run commands like the aliases below, either:"
 echo "   - Open a new Ubuntu console window (WSL)"
 echo "   - OR run BasedNode in the background later (using basednode-run &)"
 echo ""
-echo "ℹ️ Foreground means your console shows logs and stays busy."
+echo "ℹ️  Foreground means your console shows logs and stays busy."
 echo "   Background means BasedNode runs silently, and your console prompt returns."
 echo ""
-echo "ℹ️ WSL is Linux running inside Windows. All these commands work as in Linux."
+echo "ℹ️  WSL is Linux running inside Windows. All these commands work as in Linux."
 echo ""
 echo "✅ Available aliases:"
 echo ""
@@ -254,21 +287,50 @@ echo "   check-sync           # Check blockchain sync status"
 echo "   check-version        # Print node software version"
 echo "   check-authorities    # See pending extrinsics for authorities"
 echo ""
-echo "ℹ️ For background mode, run:"
+echo "ℹ️  For background mode, run:"
 echo "   basednode-run &"
 echo ""
 
-echo "alias basednode-run='~/basednode/target/release/basednode \
-  --name \"MyBasedNode\" \
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "STEP 6 — Running BasedNode in foreground"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo "✅ BasedNode installation completed!"
+echo ""
+echo "ℹ️  Note:"
+echo "→ Your node will sync and work with the network even without extra options."
+echo ""
+echo "⚠️  SECURITY REMINDER:"
+echo "→ RPC lets other computers talk to your node."
+echo "→ NEVER open RPC to the Internet unless you fully understand firewalls, VPNs, and trusted IPs."
+echo ""
+echo "→ The command below will run your node in foreground with repetitive messages filtered."
+echo "→ Your terminal will display logs and remain blocked while it runs."
+echo ""
+echo "→ To stop your node anytime, press CTRL+C."
+echo ""
+echo "→ Next time, simply run 'basednode-run' to launch your node in the foreground."
+echo "→ Or run it in the background if you prefer."
+echo ""
+
+~/basednode/target/release/basednode \
+  --name "MyBasedNode" \
   --chain ~/basednode/mainnet1_raw.json \
   --rpc-methods Safe \
   --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
-  --log info \
-  2>&1 | grep -Ev \"Successfully ran block step.|Not the block to update emission values.\"'" >> ~/.bashrc
+  --log info 2>&1 | grep -Ev "Successfully ran block step.|Not the block to update emission values."
 
-echo "alias stop-node='pkill -f basednode && echo Node stopped.'" >> ~/.bashrc
-echo "alias restart-node='stop-node; basednode-run'" >> ~/.bashrc
-echo "alias node-logs='tail -f ~/basednode/basednode.log'" >> ~/.bashrc
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "The node has stopped (if you pressed CTRL+C)."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-echo "alias check-health='curl -s http://127.0.0.1:9933 -H \"Content-Type: application/json\" -d '\''{\"id\":1,\"jsonrpc\":\"2.0\",\"method\":\"system_health\",\"params\":[]}'\'' | jq'" >> ~/.bashrc
-echo "alias check-peers='curl -s http://127.0.0.1:9933 -H \"Content-Type: appl
+echo ""
+echo "✅ NEXT STEPS:"
+echo ""
+echo "→ Run the following to launch BasedNode again:"
+echo "     basednode-run"
+echo ""
+echo "🎉 Installation finished. Happy syncing!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
