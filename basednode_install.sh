@@ -68,11 +68,24 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "STEP 2 — Updating system and installing base tools…"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-sudo apt update && \
-sudo apt upgrade -y && \
-sudo apt install -y software-properties-common curl git clang build-essential libssl-dev pkg-config libclang-dev protobuf-compiler jq
+DEPS=(software-properties-common curl git clang build-essential libssl-dev pkg-config libclang-dev protobuf-compiler jq)
+MISSING=()
+for pkg in "${DEPS[@]}"; do
+  if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+    MISSING+=("$pkg")
+  fi
+done
+
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo "Missing packages detected: ${MISSING[*]}"
+  sudo apt update
+  sudo apt install -y "${MISSING[@]}"
+else
+  echo "All dependencies already installed, skipping apt install."
+fi
 
 echo "✅ System updated and packages installed."
+
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
