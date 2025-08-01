@@ -19,7 +19,8 @@ Typical install time: **~42 minutes**
 
 ## 🔒 Security Note — What is RPC?
 
-RPC (**Remote Procedure Call**) lets you control the node (send commands, read info) from your computer or other software.  
+RPC (**Remote Procedure Call**) lets you control the node (send commands, read info) from your computer or other software.
+
 **By default, this script keeps the node’s RPC _private_ (local-only).**
 
 - This means no one outside your computer can connect or control your node.
