@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-v0.1.2: clarify comments, optimize build & git retry, robust alias step, improved onboarding
+VERSION="0.1.2"
 
 trap 'echo ""; echo "⚠️ Script interrupted. Exiting safely."; exit 1' INT
 
