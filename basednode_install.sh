@@ -243,6 +243,9 @@ BACKUP_FILE=~/.bashrc.bak.$(date +%Y%m%d%H%M%S)
 cp ~/.bashrc "$BACKUP_FILE"
 echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 
+# Clean previous BasedNode alias block if exists
+sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
+
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
@@ -267,6 +270,7 @@ EOF
 source ~/.bashrc
 
 echo "✅ Aliases added."
+
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
