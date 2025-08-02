@@ -78,65 +78,70 @@ fi
 
 echo "✅ System updated and packages installed."
 
-
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 3 — Installing Rust toolchain (nightly required)…"
+echo "STEP 3 — Checking Rust toolchain (nightly required)…"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-echo "Checking connection to Rust download servers…"
-if ! curl -sf --max-time 10 https://static.rust-lang.org/dist/channel-rust-nightly.toml > /dev/null; then
-  echo "⚠️ Can't quickly reach static.rust-lang.org"
-  echo "Network is slow or blocked (firewall, captive portal, etc)."
-  echo "Rust install may take a long time, or fail."
-  echo "If you see errors, retry later or switch network!"
-  sleep 5
-fi
+# 1. Vérifie la présence de rustup
+if ! command -v rustup >/dev/null 2>&1; then
+    echo "Rustup not found. Installing rustup and Rust nightly…"
+    rm -f rustup-init.sh rustup-install.log
 
-rm -f rustup-init.sh rustup-install.log
+    curl -sSf -o rustup-init.sh https://sh.rustup.rs
+    chmod +x rustup-init.sh
 
-curl -sSf -o rustup-init.sh https://sh.rustup.rs
-chmod +x rustup-init.sh
+    MAX_ATTEMPTS=5
+    LOG_FILE="rustup-install.log"
+    SUCCESS=false
 
-MAX_ATTEMPTS=5
-LOG_FILE="rustup-install.log"
-SUCCESS=false
+    for attempt in $(seq 1 $MAX_ATTEMPTS); do
+        DELAY=$((attempt * 10))
+        echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
+        if ./rustup-init.sh -y --default-toolchain nightly --no-modify-path >"$LOG_FILE" 2>&1; then
+            SUCCESS=true
+            break
+        else
+            echo "❌ Attempt $attempt failed. Retrying in $DELAY seconds…"
+            sleep $DELAY
+        fi
+    done
 
-for attempt in $(seq 1 $MAX_ATTEMPTS); do
-    DELAY=$((attempt * 10))
-    echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
-    if ./rustup-init.sh -y --default-toolchain nightly --no-modify-path >"$LOG_FILE" 2>&1; then
-        SUCCESS=true
-        break
-    else
-        echo "❌ Attempt $attempt failed. Retrying in $DELAY seconds…"
-        sleep $DELAY
+    rm -f rustup-init.sh
+
+    if ! $SUCCESS; then
+        echo ""
+        echo "🚨 Rust install failed after $MAX_ATTEMPTS attempts."
+        echo "This is usually a temporary network problem."
+        echo "Try these steps:"
+        echo "  • Switch Wi-Fi or use wired"
+        echo "  • Disable VPN/proxy"
+        echo "  • Retry later"
+        echo "  • Try another connection (mobile hotspot)"
+        echo "See 'rustup-install.log' for error details."
+        exit 1
     fi
-done
 
-rm -f rustup-init.sh
-
-if ! $SUCCESS; then
-    echo ""
-    echo "🚨 Rust install failed after $MAX_ATTEMPTS attempts."
-    echo "This is usually a temporary network problem."
-    echo "Try these steps:"
-    echo "  • Switch Wi-Fi or use wired"
-    echo "  • Disable VPN/proxy"
-    echo "  • Retry later"
-    echo "  • Try another connection (mobile hotspot)"
-    echo "See 'rustup-install.log' for error details."
-    echo ""
-    echo "Advanced: Try manual download:"
-    echo "     curl --retry 5 -O https://static.rust-lang.org/dist/channel-rust-nightly.toml"
-    exit 1
+    # Ajoute le PATH si absent
+    if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
+        echo 'source $HOME/.cargo/env' >> ~/.bashrc
+    fi
+    source "$HOME/.cargo/env"
+else
+    echo "Rustup already installed. Skipping rustup installation."
+    # Vérifie la présence du nightly
+    if rustup toolchain list | grep -q nightly; then
+        echo "Rust nightly toolchain already installed."
+    else
+        echo "Rustup found, but nightly toolchain missing. Installing nightly…"
+        rustup toolchain install nightly
+    fi
+    # Ajoute le PATH si absent
+    if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
+        echo 'source $HOME/.cargo/env' >> ~/.bashrc
+    fi
+    source "$HOME/.cargo/env"
 fi
-
-# Setup Rust env for the rest of the script and future shells
-if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
-    echo 'source $HOME/.cargo/env' >> ~/.bashrc
-fi
-source "$HOME/.cargo/env"
 
 if ! command -v cargo >/dev/null 2>&1; then
     echo "❌ Rust installed, but 'cargo' not found."
@@ -145,6 +150,7 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 
 echo "✅ Rust nightly installed and ready."
+
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
