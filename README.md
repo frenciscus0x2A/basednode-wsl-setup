@@ -1,7 +1,7 @@
 # BasedNode Installation Guide
 
 > **Unofficial guide** for running [BF1337/basednode](https://github.com/BF1337/basednode),  
-> a maintained community fork of the official [getbasedai/basednode](https://github.com/getbasedai/basednode) by Baselabs.
+> a maintained community fork of the official [getbasedai/basednode](https://github.com/getbasedai/basednode) by Based Labs.
 
 Run a BasedNode easily on **Ubuntu with WSL (Windows Subsystem for Linux)**, ideal for Windows users, beginners, or the crypto-curious.
 
