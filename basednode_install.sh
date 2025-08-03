@@ -258,7 +258,7 @@ echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 # Clean previous BasedNode alias block
 sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
 
-# Block d'alias à jour (ajoute ou retire ici UNIQUEMENT)
+# Block d'alias à jour (SANS le heartbeat)
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
@@ -277,12 +277,11 @@ alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/js
 alias check-version='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_version","params":[]}'\'' | jq'
 alias check-authorities='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"author_pendingExtrinsics","params":[]}'\'' | jq'
 alias node-peerid='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_localPeerId","params":[]}'\'' | jq -r .result'
-alias basednode-heartbeat='~/basednode/basednode_heartbeat.sh'
 alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
 EOF
 
-# Génère le fichier d’aide unique (source de vérité des alias)
+# Génère le fichier d’aide unique (SANS le heartbeat)
 cat <<'DOC' > ~/basednode/BASENODE_COMMANDS.txt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🦴 BasedNode — Useful commands (aliases)
@@ -297,7 +296,6 @@ check-sync           # Check blockchain sync status
 check-version        # Show node software version
 check-authorities    # Show pending extrinsics
 node-peerid          # Show your node's Peer ID
-basednode-heartbeat  # Run the network heartbeat diagnostic (if installed)
 basednode-help       # Display this help
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DOC
