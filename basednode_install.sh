@@ -258,7 +258,7 @@ echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 # Clean previous BasedNode alias block
 sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
 
-# Block d'alias à jour (SANS le heartbeat)
+# Updated alias block (add/remove here ONLY)
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
@@ -281,7 +281,7 @@ alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
 EOF
 
-# Génère le fichier d’aide unique (SANS le heartbeat)
+# Generate the unique help file (source of truth for all aliases)
 cat <<'DOC' > ~/basednode/BASENODE_COMMANDS.txt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🦴 BasedNode — Useful commands (aliases)
@@ -300,7 +300,7 @@ basednode-help       # Display this help
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DOC
 
-# Reload aliases for this session (nécessaire si tu veux utiliser direct dans ce shell)
+# Reload aliases for this session (needed if you want to use them directly in this shell)
 source ~/.bashrc
 
 echo "✅ Aliases added."
