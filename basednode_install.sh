@@ -78,6 +78,7 @@ fi
 
 echo "✅ System updated and packages installed."
 
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "STEP 3 — Checking Rust toolchain (nightly required)…"
@@ -257,6 +258,7 @@ echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 # Clean previous BasedNode alias block
 sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
 
+# Block d'alias à jour (ajoute ou retire ici UNIQUEMENT)
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
@@ -274,10 +276,33 @@ alias check-peers='curl -s http://127.0.0.1:9933 -H "Content-Type: application/j
 alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}'\'' | jq'
 alias check-version='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_version","params":[]}'\'' | jq'
 alias check-authorities='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"author_pendingExtrinsics","params":[]}'\'' | jq'
+alias node-peerid='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_localPeerId","params":[]}'\'' | jq -r .result'
+alias basednode-heartbeat='~/basednode/basednode_heartbeat.sh'
+alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
 EOF
 
-# Reload aliases for this session (full reload on next terminal)
+# Génère le fichier d’aide unique (source de vérité des alias)
+cat <<'DOC' > ~/basednode/BASENODE_COMMANDS.txt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🦴 BasedNode — Useful commands (aliases)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+basednode-run        # Start BasedNode with filtered logs
+stop-node            # Stop the running node
+restart-node         # Restart the node
+node-logs            # View node logs (background mode)
+check-health         # Check node health (RPC)
+check-peers          # List connected peers
+check-sync           # Check blockchain sync status
+check-version        # Show node software version
+check-authorities    # Show pending extrinsics
+node-peerid          # Show your node's Peer ID
+basednode-heartbeat  # Run the network heartbeat diagnostic (if installed)
+basednode-help       # Display this help
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DOC
+
+# Reload aliases for this session (nécessaire si tu veux utiliser direct dans ce shell)
 source ~/.bashrc
 
 echo "✅ Aliases added."
@@ -287,24 +312,9 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "INFO — How to use your new BasedNode aliases"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cat ~/basednode/BASENODE_COMMANDS.txt
+echo ""
 
-echo "Your BasedNode is about to start in the foreground."
-echo ""
-echo "ℹ️  When running in foreground, your terminal will be busy showing logs."
-echo "   To keep your terminal free, you can run BasedNode in the background:"
-echo "      basednode-run &"
-echo ""
-echo "Available aliases:"
-echo "   basednode-run      # Start BasedNode with filtered logs"
-echo "   stop-node          # Stop the running node"
-echo "   restart-node       # Restart the node"
-echo "   node-logs          # View logs (if running in background)"
-echo "   check-health       # Check node health (RPC)"
-echo "   check-peers        # List connected peers"
-echo "   check-sync         # Check blockchain sync status"
-echo "   check-version      # Show node software version"
-echo "   check-authorities  # See pending extrinsics"
-echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "STEP 6 — Running BasedNode in foreground"
