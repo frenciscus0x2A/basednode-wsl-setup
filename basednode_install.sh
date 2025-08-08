@@ -344,15 +344,16 @@ echo ""
 echo "• To stop BasedNode, press CTRL+C anytime."
 echo ""
 echo "• Next time, simply run 'basednode-run' to start your node."
-echo "• Or use 'basednode-run &' to run it in background."
+echo "• Or use 'basednode-run-bg' to run it in background."
 echo ""
 
-~/basednode/target/release/basednode \
-  --name "MyBasedNode" \
-  --chain ~/basednode/mainnet1_raw.json \
+BASED_LOG="$HOME/basednode/basednode.log"
+basednode \
+  --name "${BASEDNODE_NAME:-MyBasedNode}" \
+  --chain "$SPEC_PATH" \
   --rpc-methods Safe \
   --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
-  --log info 2>&1 | grep -Ev "Successfully ran block step.|Not the block to update emission values."
+  --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values."
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -366,6 +367,10 @@ echo "     basednode-run"
 echo ""
 echo "🎉 Installation finished. Your node is syncing!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
