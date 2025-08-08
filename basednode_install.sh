@@ -55,6 +55,25 @@ fi
 
 echo "✅ Sudo access confirmed."
 
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "STEP 1.5 — Environment checks (WSL & Ubuntu)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if ! grep -qi microsoft /proc/version; then
+  echo "❌ This installer is intended for Windows Subsystem for Linux (WSL). Aborting."
+  exit 1
+fi
+
+. /etc/os-release || true
+if [ "${VERSION_ID:-}" != "22.04" ]; then
+  echo "⚠️ Ubuntu ${VERSION_ID:-unknown} detected. This guide is tested on 22.04. Continuing anyway."
+fi
+
+echo "✅ WSL/Ubuntu checks passed."
+
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "STEP 2 — Updating system and installing base tools…"
@@ -84,9 +103,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "STEP 3 — Checking Rust toolchain (nightly required)…"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-PINNED_NIGHTLY="nightly-2025-01-07"  # adapte la date si besoin
+PINNED_NIGHTLY="nightly-2025-01-07"
 
-# 1. rustup present ?
 if ! command -v rustup >/dev/null 2>&1; then
     echo "Rustup not found. Installing rustup and Rust nightly…"
     rm -f rustup-init.sh rustup-install.log
