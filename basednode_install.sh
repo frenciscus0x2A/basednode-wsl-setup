@@ -1,83 +1,73 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Abort on error (-e), undefined variables (-u), and fail pipelines (pipefail).
 
 VERSION="0.1.2"
 
 trap 'echo ""; echo "⚠️ Script interrupted. Exiting safely."; exit 1' INT
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo " BasedNode install script — version $VERSION"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+# Gracefully handle Ctrl+C interrupts.
 
 ###############################################################################
-# BasedNode WSL Installation Guide (Unofficial Fork)
-#
-# Installs:
-#   - BasedNode from https://github.com/BF1337/basednode (Community Fork)
-#
-# 🛠️ Requirements: Rust NIGHTLY toolchain
-#
-# HOW TO USE (Ubuntu WSL terminal):
-#
-#   1. Download this script:
-#        wget https://raw.githubusercontent.com/frenciscus0x2A/basednode-wsl-setup/main/basednode_install.sh -O basednode_install.sh
-#
-#   2. Make it executable:
-#        chmod +x basednode_install.sh
-#
-#   3. Run it:
-#        ./basednode_install.sh
-#
-# What this script does:
-#   • Checks sudo access
-#   • Updates your system and installs dependencies
-#   • Installs Rust nightly (+ WASM)
-#   • Clones/builds BasedNode
-#   • Installs the binary globally
-#   • Creates useful aliases in your shell
-#   • Launches the node with filtered logs
-#
-# At the end: your node will be running and syncing!
-#
-# Author: frenciscus_0x2A
+# Pretty printing helpers (adaptive separators)
 ###############################################################################
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 1 — Checking sudo access…"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-if ! sudo -v; then
-    echo "❌ Wrong password or sudo failed multiple times. Exiting."
-    exit 1
+# Use a Unicode line if UTF-8 appears available; otherwise plain ASCII.
+if [[ "${LANG:-}" =~ (UTF|utf)-?8 ]]; then
+  SEP_CHAR='━'
+else
+  SEP_CHAR='-'
 fi
 
+print_sep() {
+  # Draw a full-width separator; default to 60 columns if unknown.
+  local cols="${COLUMNS:-60}"
+  printf '%*s\n' "$cols" '' | tr ' ' "$SEP_CHAR"
+}
+
+print_h1() {
+  print_sep
+  printf " %s — version %s\n" "$1" "$VERSION"
+  print_sep
+}
+
+print_h2() {
+  print_sep
+  printf " %s\n" "$1"
+  print_sep
+}
+
+echo ""
+print_h1 "BasedNode install script"
+
+echo ""
+print_h2 "STEP 1 — Checking sudo access…"
+
+if ! sudo -v; then
+  echo "❌ Wrong password or sudo failed multiple times. Exiting."
+  exit 1
+fi
+# Ensure sudo privileges are available before continuing.
 echo "✅ Sudo access confirmed."
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 1.5 — Environment checks (WSL & Ubuntu)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 1.5 — Environment checks (WSL & Ubuntu)"
 
 if ! grep -qi microsoft /proc/version; then
   echo "❌ This installer is intended for Windows Subsystem for Linux (WSL). Aborting."
   exit 1
 fi
+# Detect WSL by checking /proc/version for "microsoft" (case-insensitive).
 
 . /etc/os-release || true
 if [ "${VERSION_ID:-}" != "22.04" ]; then
   echo "⚠️ Ubuntu ${VERSION_ID:-unknown} detected. This guide is tested on 22.04. Continuing anyway."
 fi
-
+# Warn if not running on the tested Ubuntu release (22.04 LTS).
 echo "✅ WSL/Ubuntu checks passed."
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 2 — Updating system and installing base tools…"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 2 — Updating system and installing base tools…"
 
 DEPS=(software-properties-common curl git clang build-essential libssl-dev pkg-config libclang-dev protobuf-compiler jq)
 MISSING=()
@@ -99,141 +89,141 @@ echo "✅ System updated and packages installed."
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 3 — Checking Rust toolchain (nightly required)…"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 3 — Checking Rust toolchain (nightly required)…"
 
 PINNED_NIGHTLY="nightly-2025-01-07"
+# Pin Rust nightly to avoid breakage from upstream changes in toolchain.
 
 if ! command -v rustup >/dev/null 2>&1; then
-    echo "Rustup not found. Installing rustup and Rust nightly…"
-    rm -f rustup-init.sh rustup-install.log
+  echo "Rustup not found. Installing rustup and Rust nightly…"
+  rm -f rustup-init.sh rustup-install.log
 
-    curl -sSf -o rustup-init.sh https://sh.rustup.rs
-    chmod +x rustup-init.sh
+  curl -sSf -o rustup-init.sh https://sh.rustup.rs
+  chmod +x rustup-init.sh
 
-    MAX_ATTEMPTS=5
-    LOG_FILE="rustup-install.log"
-    SUCCESS=false
+  MAX_ATTEMPTS=5
+  LOG_FILE="rustup-install.log"
+  SUCCESS=false
 
-    for attempt in $(seq 1 $MAX_ATTEMPTS); do
-        DELAY=$((attempt * 10))
-        echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
-        if ./rustup-init.sh -y --default-toolchain "$PINNED_NIGHTLY" --no-modify-path >"$LOG_FILE" 2>&1; then
-            SUCCESS=true
-            break
-        else
-            echo "❌ Attempt $attempt failed. Retrying in $DELAY seconds…"
-            sleep $DELAY
-        fi
-    done
-    rm -f rustup-init.sh
-    if ! $SUCCESS; then
-        echo ""
-        echo "🚨 Rust install failed after $MAX_ATTEMPTS attempts."
-        echo "See 'rustup-install.log' for error details."
-        exit 1
+  for attempt in $(seq 1 $MAX_ATTEMPTS); do
+    DELAY=$((attempt * 10))
+    echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
+    if ./rustup-init.sh -y --default-toolchain "$PINNED_NIGHTLY" --no-modify-path >"$LOG_FILE" 2>&1; then
+      SUCCESS=true
+      break
+    else
+      echo "❌ Attempt $attempt failed. Retrying in $DELAY seconds…"
+      sleep $DELAY
     fi
+  done
+  rm -f rustup-init.sh
+  if ! $SUCCESS; then
+    echo ""
+    echo "🚨 Rust install failed after $MAX_PULL_ATTEMPTS attempts."
+    echo "See 'rustup-install.log' for error details."
+    exit 1
+  fi
 
-    # PATH
-    if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
-        echo 'source $HOME/.cargo/env' >> ~/.bashrc
-    fi
-    source "$HOME/.cargo/env"
+  # PATH
+  if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
+    echo 'source $HOME/.cargo/env' >> ~/.bashrc
+  fi
+  # shellcheck disable=SC1090
+  source "$HOME/.cargo/env"
 else
-    echo "Rustup already installed. Skipping rustup installation."
-    if ! rustup toolchain list | grep -q "$PINNED_NIGHTLY"; then
-        echo "Installing pinned nightly toolchain: $PINNED_NIGHTLY"
-        rustup toolchain install "$PINNED_NIGHTLY"
-    fi
-    if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
-        echo 'source $HOME/.cargo/env' >> ~/.bashrc
-    fi
-    source "$HOME/.cargo/env"
+  echo "Rustup already installed. Skipping rustup installation."
+  if ! rustup toolchain list | grep -q "$PINNED_NIGHTLY"; then
+    echo "Installing pinned nightly toolchain: $PINNED_NIGHTLY"
+    rustup toolchain install "$PINNED_NIGHTLY"
+  fi
+  if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
+    echo 'source $HOME/.cargo/env' >> ~/.bashrc
+  fi
+  # shellcheck disable=SC1090
+  source "$HOME/.cargo/env"
 fi
 
-# Use pinned nightly moving forward
+# Use pinned nightly moving forward.
 NIGHTLY_VERSION="$PINNED_NIGHTLY"
 
-# Ensure wasm target
+# Ensure WASM target (required for Substrate runtimes).
 echo "Ensuring WASM target is installed for: $NIGHTLY_VERSION…"
 if ! rustup target list --toolchain "$NIGHTLY_VERSION" | grep -q 'wasm32-unknown-unknown (installed)'; then
-    rustup target add wasm32-unknown-unknown --toolchain "$NIGHTLY_VERSION"
+  rustup target add wasm32-unknown-unknown --toolchain "$NIGHTLY_VERSION"
 fi
 
 if ! command -v cargo >/dev/null 2>&1; then
-    echo "❌ Rust installed, but 'cargo' not found."
-    echo "Close and reopen your terminal, then rerun this script."
-    exit 1
+  echo "❌ Rust installed, but 'cargo' not found."
+  echo "Close and reopen your terminal, then rerun this script."
+  exit 1
 fi
 
 echo "✅ Rust nightly ($NIGHTLY_VERSION) installed and ready."
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 4 — Cloning and building BasedNode…"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 4 — Cloning and building BasedNode…"
 
 cd ~
 
 if [ -d "basednode" ]; then
-    echo "Folder 'basednode' exists. Updating repo…"
-    cd basednode
-    MAX_PULL_ATTEMPTS=3
-    PULL_SUCCESS=false
-    for attempt in $(seq 1 $MAX_PULL_ATTEMPTS); do
-        if git pull; then
-            PULL_SUCCESS=true
-            break
-        else
-            echo "❌ git pull failed (attempt $attempt). Retrying in 10s…"
-            sleep 10
-        fi
-    done
-    if ! $PULL_SUCCESS; then
+  echo "Folder 'basednode' exists. Updating repo…"
+  cd basednode
+  MAX_PULL_ATTEMPTS=3
+  PULL_SUCCESS=false
+  for attempt in $(seq 1 $MAX_PULL_ATTEMPTS); do
+    if git pull; then
+      PULL_SUCCESS=true
+      break
+    else
+      echo "❌ git pull failed (attempt $attempt). Retrying in 10s…"
+      sleep 10
+    fi
+  done
+  if ! $PULL_SUCCESS; then
         echo "❌ Failed to update BasedNode repository after $MAX_PULL_ATTEMPTS attempts."
-        exit 1
-    fi
+    exit 1
+  fi
 else
-    MAX_CLONE_ATTEMPTS=3
-    CLONE_SUCCESS=false
-    for attempt in $(seq 1 $MAX_CLONE_ATTEMPTS); do
-        if git clone --branch main https://github.com/BF1337/basednode.git; then
-            CLONE_SUCCESS=true
-            break
-        else
-            echo "❌ Git clone failed (attempt $attempt). Retrying in 10s…"
-            sleep 10
-        fi
-    done
-    if ! $CLONE_SUCCESS; then
-        echo "❌ Failed to clone BasedNode repository after $MAX_CLONE_ATTEMPTS attempts."
-        exit 1
+  MAX_CLONE_ATTEMPTS=3
+  CLONE_SUCCESS=false
+  for attempt in $(seq 1 $MAX_CLONE_ATTEMPTS); do
+    if git clone --branch main https://github.com/BF1337/basednode.git; then
+      CLONE_SUCCESS=true
+      break
+    else
+      echo "❌ Git clone failed (attempt $attempt). Retrying in 10s…"
+      sleep 10
     fi
-    cd basednode
+  done
+  if ! $CLONE_SUCCESS; then
+    echo "❌ Failed to clone BasedNode repository after $MAX_CLONE_ATTEMPTS attempts."
+    exit 1
+  fi
+  cd basednode
 fi
 
 echo "Building BasedNode… (this may take several minutes)"
 BUILD_LOG="$HOME/basednode_build.log"
 if cargo +"$NIGHTLY_VERSION" build --release -j "$(nproc)" | tee "$BUILD_LOG"; then
-    echo "✅ Build finished."
+  echo "✅ Build finished."
 else
-    echo "❌ Build failed. Attempting 'cargo clean' and rebuild with -j 1…"
-    cargo clean
-    if ! cargo +"$NIGHTLY_VERSION" build --release -j 1 | tee -a "$BUILD_LOG"; then
-        echo "❌ Build failed even after clean. See '$BUILD_LOG' for details."
-        exit 1
-    fi
-    echo "✅ Build finished after clean (single job)."
+  echo "❌ Build failed. Attempting 'cargo clean' and rebuild with -j 1…"
+  cargo clean
+  if ! cargo +"$NIGHTLY_VERSION" build --release -j 1 | tee -a "$BUILD_LOG"; then
+    echo "❌ Build failed even after clean. See '$BUILD_LOG' for details."
+    exit 1
+  fi
+  echo "✅ Build finished after clean (single job)."
 fi
+# Fallback to single-threaded build to reduce RAM usage (common OOM in WSL).
 
-# Install binary globally (single source of truth)
+# Install the binary system-wide for consistent usage across aliases and manual runs.
 sudo install -m 0755 ./target/release/basednode /usr/local/bin/basednode
 
 if ! command -v basednode >/dev/null 2>&1; then
-    echo "❌ BasedNode binary not found in PATH after installation."
-    exit 1
+  echo "❌ BasedNode binary not found in PATH after installation."
+  exit 1
 fi
 
 echo "✅ BasedNode binary installed globally."
@@ -241,9 +231,7 @@ mkdir -p ~/basednode
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 4.5 — Ensuring chain spec (mainnet1_raw.json)"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 4.5 — Ensuring chain spec (mainnet1_raw.json)"
 
 SPEC_PATH="$HOME/basednode/mainnet1_raw.json"
 if [ ! -f "$SPEC_PATH" ]; then
@@ -253,27 +241,27 @@ if [ ! -f "$SPEC_PATH" ]; then
     echo "❌ Unable to download chain spec. Check your network or try again later."
     exit 1
   fi
-  # Optionnel: vérifier un SHA256 connu ici (si tu veux pinner)
+  # Optional: verify a known SHA256 here if you want to pin the artifact.
 fi
 echo "✅ Chain spec ready at: $SPEC_PATH"
+# Ensure the chain specification is present; download from canonical repo if missing.
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 5 — Creating aliases for running BasedNode"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 5 — Creating aliases for running BasedNode"
 
 BACKUP_FILE=~/.bashrc.bak.$(date +%Y%m%d%H%M%S)
 cp ~/.bashrc "$BACKUP_FILE"
 echo "→ Backup of ~/.bashrc saved to $BACKUP_FILE"
 
-# Clean previous BasedNode alias block
+# Clean previous BasedNode alias block (idempotent re-run).
 sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
 
 # Updated alias block (add/remove here ONLY)
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
+# Centralize spec/bootnode/log to make updates trivial in one place.
 BASED_SPEC="$HOME/basednode/mainnet1_raw.json"
 BASED_BOOT="/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh"
 BASED_LOG="$HOME/basednode/basednode.log"
@@ -284,6 +272,7 @@ alias basednode-run='(basednode \
   --rpc-methods Safe \
   --bootnodes "$BASED_BOOT" \
   --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values.")'
+# Foreground run with filtered logs and persistent log file.
 
 alias basednode-run-bg='nohup basednode \
   --name "${BASEDNODE_NAME:-MyBasedNode}" \
@@ -291,10 +280,13 @@ alias basednode-run-bg='nohup basednode \
   --rpc-methods Safe \
   --bootnodes "$BASED_BOOT" \
   --log info >> "$BASED_LOG" 2>&1 & echo $! > "$HOME/basednode/basednode.pid" && echo "Started in background (PID $(cat $HOME/basednode/basednode.pid))"'
+# Background execution with nohup; PID stored for reference.
 
 alias stop-node='if pgrep -f "basednode"; then pkill -f basednode && echo "Node stopped."; else echo "No node running."; fi'
 alias restart-node='stop-node; sleep 1; basednode-run'
 alias node-logs='tail -n 500 -f "$BASED_LOG"'
+# View last 500 log lines and follow updates in real-time.
+
 alias check-health='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_health","params":[]}'\'' | jq'
 alias check-peers='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_peers","params":[]}'\'' | jq'
 alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_syncState","params":[]}'\'' | jq'
@@ -325,23 +317,20 @@ basednode-help       # Display this help
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DOC
 
-# Reload aliases for this session (needed if you want to use them directly in this shell)
+# Reload aliases for this session (so they’re usable immediately).
+# shellcheck disable=SC1090
 source ~/.bashrc
 
 echo "✅ Aliases added."
 
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "INFO — How to use your new BasedNode aliases"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "INFO — How to use your new BasedNode aliases"
 cat ~/basednode/BASENODE_COMMANDS.txt
 echo ""
 
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 6 — Running BasedNode in foreground"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "STEP 6 — Running BasedNode in foreground"
 
 echo ""
 echo "✅ BasedNode installation completed!"
@@ -366,11 +355,10 @@ basednode \
   --rpc-methods Safe \
   --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
   --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values."
+# Final foreground run uses the same parameters and log handling as aliases to maintain consistency.
 
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "The node has stopped (if you pressed CTRL+C)."
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+print_h2 "The node has stopped (if you pressed CTRL+C)."
 
 echo ""
 echo "✅ NEXT STEPS:"
@@ -378,11 +366,6 @@ echo "• To launch BasedNode again:"
 echo "     basednode-run"
 echo ""
 echo "🎉 Installation finished. Your node is syncing!"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
+print_sep
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+print_sep

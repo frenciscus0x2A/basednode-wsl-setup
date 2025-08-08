@@ -43,7 +43,7 @@ RPC (**Remote Procedure Call**) lets you control the node (send commands, read i
 
 ## ✅ How to install the node
 
-Follow the instructions in `basednode_install.sh`.
+Follow the instructions in `INSTALL.md`.
 
 ---
 
