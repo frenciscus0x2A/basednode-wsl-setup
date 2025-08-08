@@ -84,7 +84,9 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "STEP 3 — Checking Rust toolchain (nightly required)…"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# 1. Vérifie la présence de rustup
+PINNED_NIGHTLY="nightly-2025-01-07"  # adapte la date si besoin
+
+# 1. rustup present ?
 if ! command -v rustup >/dev/null 2>&1; then
     echo "Rustup not found. Installing rustup and Rust nightly…"
     rm -f rustup-init.sh rustup-install.log
@@ -99,7 +101,7 @@ if ! command -v rustup >/dev/null 2>&1; then
     for attempt in $(seq 1 $MAX_ATTEMPTS); do
         DELAY=$((attempt * 10))
         echo "🔧 Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
-        if ./rustup-init.sh -y --default-toolchain nightly --no-modify-path >"$LOG_FILE" 2>&1; then
+        if ./rustup-init.sh -y --default-toolchain "$PINNED_NIGHTLY" --no-modify-path >"$LOG_FILE" 2>&1; then
             SUCCESS=true
             break
         else
@@ -107,41 +109,38 @@ if ! command -v rustup >/dev/null 2>&1; then
             sleep $DELAY
         fi
     done
-
     rm -f rustup-init.sh
-
     if ! $SUCCESS; then
         echo ""
         echo "🚨 Rust install failed after $MAX_ATTEMPTS attempts."
-        echo "This is usually a temporary network problem."
-        echo "Try these steps:"
-        echo "  • Switch Wi-Fi or use wired"
-        echo "  • Disable VPN/proxy"
-        echo "  • Retry later"
-        echo "  • Try another connection (mobile hotspot)"
         echo "See 'rustup-install.log' for error details."
         exit 1
     fi
 
-    # Ajoute le PATH si absent
+    # PATH
     if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
         echo 'source $HOME/.cargo/env' >> ~/.bashrc
     fi
     source "$HOME/.cargo/env"
 else
     echo "Rustup already installed. Skipping rustup installation."
-    # Vérifie la présence du nightly
-    if rustup toolchain list | grep -q nightly; then
-        echo "Rust nightly toolchain already installed."
-    else
-        echo "Rustup found, but nightly toolchain missing. Installing nightly…"
-        rustup toolchain install nightly
+    if ! rustup toolchain list | grep -q "$PINNED_NIGHTLY"; then
+        echo "Installing pinned nightly toolchain: $PINNED_NIGHTLY"
+        rustup toolchain install "$PINNED_NIGHTLY"
     fi
-    # Ajoute le PATH si absent
     if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
         echo 'source $HOME/.cargo/env' >> ~/.bashrc
     fi
     source "$HOME/.cargo/env"
+fi
+
+# Use pinned nightly moving forward
+NIGHTLY_VERSION="$PINNED_NIGHTLY"
+
+# Ensure wasm target
+echo "Ensuring WASM target is installed for: $NIGHTLY_VERSION…"
+if ! rustup target list --toolchain "$NIGHTLY_VERSION" | grep -q 'wasm32-unknown-unknown (installed)'; then
+    rustup target add wasm32-unknown-unknown --toolchain "$NIGHTLY_VERSION"
 fi
 
 if ! command -v cargo >/dev/null 2>&1; then
@@ -150,7 +149,7 @@ if ! command -v cargo >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "✅ Rust nightly installed and ready."
+echo "✅ Rust nightly ($NIGHTLY_VERSION) installed and ready."
 
 
 echo ""
