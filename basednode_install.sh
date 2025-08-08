@@ -175,11 +175,9 @@ if [ -d "basednode" ]; then
     done
     if ! $PULL_SUCCESS; then
         echo "❌ Failed to update BasedNode repository after $MAX_PULL_ATTEMPTS attempts."
-        echo "Check your network connection, or try again later."
         exit 1
     fi
 else
-    # Clone with retry if network is unreliable
     MAX_CLONE_ATTEMPTS=3
     CLONE_SUCCESS=false
     for attempt in $(seq 1 $MAX_CLONE_ATTEMPTS); do
@@ -193,48 +191,27 @@ else
     done
     if ! $CLONE_SUCCESS; then
         echo "❌ Failed to clone BasedNode repository after $MAX_CLONE_ATTEMPTS attempts."
-        echo "Check your network connection, or try again later."
         exit 1
     fi
     cd basednode
 fi
 
-# Ensure Rust toolchain & WASM target
-NIGHTLY_VERSION=$(rustup show active-toolchain 2>/dev/null | grep nightly | cut -d' ' -f1)
-if [ -z "$NIGHTLY_VERSION" ]; then
-    NIGHTLY_VERSION=$(rustup toolchain list | grep nightly | head -1 | cut -d' ' -f1)
-    [ -z "$NIGHTLY_VERSION" ] && NIGHTLY_VERSION="nightly"
-fi
-echo "Ensuring WASM target is installed for Rust toolchain: $NIGHTLY_VERSION…"
-if ! rustup target list --toolchain $NIGHTLY_VERSION | grep -q 'wasm32-unknown-unknown (installed)'; then
-    rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY_VERSION
-fi
-
 echo "Building BasedNode… (this may take several minutes)"
-
-BUILD_SUCCESS=false
-
-# Try a fast build first; clean & rebuild if it fails
-if cargo +$NIGHTLY_VERSION build --release | tee ~/basednode_build.log; then
+BUILD_LOG="$HOME/basednode_build.log"
+if cargo +"$NIGHTLY_VERSION" build --release -j "$(nproc)" | tee "$BUILD_LOG"; then
     echo "✅ Build finished."
-    BUILD_SUCCESS=true
 else
-    echo "❌ Build failed. Attempting 'cargo clean' and rebuild…"
+    echo "❌ Build failed. Attempting 'cargo clean' and rebuild with -j 1…"
     cargo clean
-    if cargo +$NIGHTLY_VERSION build --release | tee -a ~/basednode_build.log; then
-        echo "✅ Build finished after cleaning."
-        BUILD_SUCCESS=true
+    if ! cargo +"$NIGHTLY_VERSION" build --release -j 1 | tee -a "$BUILD_LOG"; then
+        echo "❌ Build failed even after clean. See '$BUILD_LOG' for details."
+        exit 1
     fi
+    echo "✅ Build finished after clean (single job)."
 fi
 
-if ! $BUILD_SUCCESS; then
-    echo "❌ Build failed even after 'cargo clean'."
-    echo "Check '~/basednode_build.log' for details."
-    echo "Try: cargo +$NIGHTLY_VERSION build --release"
-    exit 1
-fi
-
-sudo cp ./target/release/basednode /usr/local/bin/
+# Install binary globally (single source of truth)
+sudo install -m 0755 ./target/release/basednode /usr/local/bin/basednode
 
 if ! command -v basednode >/dev/null 2>&1; then
     echo "❌ BasedNode binary not found in PATH after installation."
