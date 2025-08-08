@@ -262,20 +262,32 @@ sed -i '/# === BasedNode aliases ===/,/# ========================/d' ~/.bashrc
 cat <<'EOF' >> ~/.bashrc
 
 # === BasedNode aliases ===
-alias basednode-run='~/basednode/target/release/basednode \
-  --name "MyBasedNode" \
-  --chain ~/basednode/mainnet1_raw.json \
+BASED_SPEC="$HOME/basednode/mainnet1_raw.json"
+BASED_BOOT="/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh"
+BASED_LOG="$HOME/basednode/basednode.log"
+
+alias basednode-run='(basednode \
+  --name "${BASEDNODE_NAME:-MyBasedNode}" \
+  --chain "$BASED_SPEC" \
   --rpc-methods Safe \
-  --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
-  --log info 2>&1 | grep -Ev "Successfully ran block step.|Not the block to update emission values."'
-alias stop-node='pkill -f basednode && echo Node stopped.'
-alias restart-node='stop-node; basednode-run'
-alias node-logs='tail -f ~/basednode/basednode.log'
+  --bootnodes "$BASED_BOOT" \
+  --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values.")'
+
+alias basednode-run-bg='nohup basednode \
+  --name "${BASEDNODE_NAME:-MyBasedNode}" \
+  --chain "$BASED_SPEC" \
+  --rpc-methods Safe \
+  --bootnodes "$BASED_BOOT" \
+  --log info >> "$BASED_LOG" 2>&1 & echo $! > "$HOME/basednode/basednode.pid" && echo "Started in background (PID $(cat $HOME/basednode/basednode.pid))"'
+
+alias stop-node='if pgrep -f "basednode"; then pkill -f basednode && echo "Node stopped."; else echo "No node running."; fi'
+alias restart-node='stop-node; sleep 1; basednode-run'
+alias node-logs='tail -n 500 -f "$BASED_LOG"'
 alias check-health='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_health","params":[]}'\'' | jq'
 alias check-peers='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_peers","params":[]}'\'' | jq'
-alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"chain_getHeader","params":[]}'\'' | jq'
+alias check-sync='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_syncState","params":[]}'\'' | jq'
 alias check-version='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_version","params":[]}'\'' | jq'
-alias check-authorities='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"author_pendingExtrinsics","params":[]}'\'' | jq'
+alias check-pending='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"author_pendingExtrinsics","params":[]}'\'' | jq'
 alias node-peerid='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_localPeerId","params":[]}'\'' | jq -r .result'
 alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
@@ -287,6 +299,7 @@ cat <<'DOC' > ~/basednode/BASENODE_COMMANDS.txt
 🦴 BasedNode — Useful commands (aliases)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 basednode-run        # Start BasedNode with filtered logs
+basednode-run-bg     # Start BasedNode in background (nohup)
 stop-node            # Stop the running node
 restart-node         # Restart the node
 node-logs            # View node logs (background mode)
@@ -294,7 +307,7 @@ check-health         # Check node health (RPC)
 check-peers          # List connected peers
 check-sync           # Check blockchain sync status
 check-version        # Show node software version
-check-authorities    # Show pending extrinsics
+check-pending        # Show pending extrinsics
 node-peerid          # Show your node's Peer ID
 basednode-help       # Display this help
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
