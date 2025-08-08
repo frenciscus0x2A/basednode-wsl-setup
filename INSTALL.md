@@ -21,6 +21,6 @@ chmod +x basednode_install.sh
 > - Creates useful aliases and helper commands
 > - Displays available aliases after installation
 > - Launches the node with filtered logs (foreground or background)
->
-> ✅ At the end: your node will be running and syncing!  
-> **Author:** frenciscus_0x2A
+
+✅ At the end: your node will be running and syncing!
+**Author:** frenciscus_0x2A
