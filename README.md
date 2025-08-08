@@ -1,4 +1,4 @@
-# BasedNode Installation Guide (Unofficial Fork)
+# BasedNode — Quick WSL Install Guide (Unofficial Fork)
 
 > **Unofficial guide** for running [BF1337/basednode](https://github.com/BF1337/basednode),  
 > a maintained community fork of the official [getbasedai/basednode](https://github.com/getbasedai/basednode) by Based Labs.
@@ -34,9 +34,9 @@ For public/24-7 nodes, use a VPS or dedicated server.
 
 ---
 
-## 📦 Install the node
+## ✅ How to install the node
 
-👉 Follow the step-by-step instructions in [INSTALL.md](INSTALL.md)
+See the full step-by-step guide here: [INSTALL.md](INSTALL.md)
 
 ---
 
