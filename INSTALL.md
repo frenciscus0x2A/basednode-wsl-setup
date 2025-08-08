@@ -1,12 +1,11 @@
 ## 📦 Install in 3 steps
 
-On **Windows**, open the **Ubuntu terminal window** (from Start Menu), then copy-paste:
+On **Windows**, open the **Ubuntu terminal window**, then copy-paste:
 
 ```bash
 wget https://raw.githubusercontent.com/frenciscus0x2A/basednode-wsl-setup/main/basednode_install.sh -O basednode_install.sh
 chmod +x basednode_install.sh
 ./basednode_install.sh
-
 ```
 
 > **What this script does:**

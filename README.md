@@ -1,52 +1,44 @@
-# BasedNode Installation Guide
+# BasedNode Installation Guide (Unofficial Fork)
 
 > **Unofficial guide** for running [BF1337/basednode](https://github.com/BF1337/basednode),  
 > a maintained community fork of the official [getbasedai/basednode](https://github.com/getbasedai/basednode) by Based Labs.
 
-Run a BasedNode easily on **Ubuntu with WSL (Windows Subsystem for Linux)**, ideal for Windows users, beginners, or the crypto-curious.
-
+Run a BasedNode on **Ubuntu with WSL (Windows Subsystem for Linux)** — quick to set up, beginner-friendly, and easy to remove.  
 Typical install time: **~42 minutes**
 
 ---
 
 ## 🧐 Why WSL?
 
-- Runs Ubuntu “inside” Windows (no virtual machine required)
-- Faster setup, fewer headaches
-- Easy to remove if you change your mind
+- Runs Ubuntu inside Windows (no virtual machine needed)
+- Simple setup, fewer issues
+- Easy to uninstall if you change your mind
 
 ---
 
-## 🔒 Security Note — What is RPC?
+## 🔒 Security Note — RPC
 
-RPC (**Remote Procedure Call**) lets you control the node (send commands, read info) from your computer or other software.
+RPC (**Remote Procedure Call**) lets you interact with your node.
 
-**By default, this script keeps the node’s RPC _private_ (local-only).**
-
-- This means no one outside your computer can connect or control your node.
-- As long as you don’t change this, it’s safe for testing on your machine.
-
-> ⚠️ **If you later change node settings to open up RPC or network ports:**  
-> Make sure you understand security basics first!  
-> For 24/7 or public nodes, use a VPS or a server, not your personal computer.
+This script keeps RPC **private** by default — only your PC can access it.  
+If you open RPC or other ports later, learn the security basics first.  
+For public/24-7 nodes, use a VPS or dedicated server.
 
 ---
 
 ## ✅ How to install Ubuntu (WSL)
 
-1. Open the **Microsoft Store** and search for **Ubuntu 22.04 LTS** (any 22.04.x sub-version is OK).
-2. Click **Install**.
-3. Launch Ubuntu from the Start menu.
-4. Choose a Linux username and password.
+1. Open the **Microsoft Store**, search for **Ubuntu 22.04 LTS**, and install.
+2. Launch Ubuntu from the Start Menu.
+3. Create a Linux username & password.
 
 ---
 
-## ✅ How to install the node
+## 📦 Install the node
 
-Follow the instructions in `INSTALL.md`.
+👉 Follow the step-by-step instructions in [INSTALL.md](INSTALL.md)
 
 ---
 
-May your syncs be smooth. GLHF frens!
-
-Author: frenciscus_0x2A
+_May your syncs be smooth. GLHF frens!_  
+**Author:** frenciscus_0x2A
