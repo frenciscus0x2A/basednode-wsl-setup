@@ -328,13 +328,34 @@ say_info "To stop BasedNode, press CTRL+C anytime."
 say_info "Next time, use 'basednode-run' (foreground) or 'basednode-run-bg' (background)."
 
 BASED_LOG="$WORKDIR/basednode.log"
+
+# Make the log-filtering pipeline robust under -e/pipefail:
+# - grep -Ev returns 1 when it filters out all lines (not an error) and 2 on real errors.
+# - We tolerate rc_grep 0/1 and fail only on 2, while still failing if the node or tee fail.
+set +e
+set +o pipefail
+
 basednode \
   --name "${BASEDNODE_NAME:-MyBasedNode}" \
   --chain "$SPEC_PATH" \
   --rpc-methods Safe \
   --rpc-cors=none \
   --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
-  --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values."
+  --log info 2>&1 \
+| tee -a "$BASED_LOG" \
+| grep -Ev "Successfully ran block step.|Not the block to update emission values."
+
+rc_node=${PIPESTATUS[0]}
+rc_tee=${PIPESTATUS[1]}
+rc_grep=${PIPESTATUS[2]}
+
+set -e
+set -o pipefail
+
+if [ "$rc_node" -ne 0 ] || [ "$rc_tee" -ne 0 ] || [ "$rc_grep" -eq 2 ]; then
+  say_err "Log pipeline failed (node=$rc_node, tee=$rc_tee, grep=$rc_grep)"
+  exit 1
+fi
 
 echo ""
 print_h2 "The node has stopped (if you pressed CTRL+C)."
