@@ -248,6 +248,24 @@ mkdir -p ~/basednode
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "STEP 4.5 — Ensuring chain spec (mainnet1_raw.json)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+SPEC_PATH="$HOME/basednode/mainnet1_raw.json"
+if [ ! -f "$SPEC_PATH" ]; then
+  echo "ℹ️ mainnet1_raw.json not found locally. Downloading from official repo…"
+  mkdir -p "$HOME/basednode"
+  if ! curl -fL -o "$SPEC_PATH" "https://raw.githubusercontent.com/getbasedai/basednode/main/mainnet1_raw.json"; then
+    echo "❌ Unable to download chain spec. Check your network or try again later."
+    exit 1
+  fi
+  # Optionnel: vérifier un SHA256 connu ici (si tu veux pinner)
+fi
+echo "✅ Chain spec ready at: $SPEC_PATH"
+
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "STEP 5 — Creating aliases for running BasedNode"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
