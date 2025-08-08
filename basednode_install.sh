@@ -5,32 +5,16 @@ set -euo pipefail
 VERSION="0.1.3"
 
 ###############################################################################
-# Pretty printing helpers (robust + ASCII-first)
+# Pretty printing helpers (robust ASCII-only)
 ###############################################################################
-# Rules:
-# - Default to ASCII (portable)
-# - Only use Unicode if: stdout is a TTY AND locale is UTF-8 AND NO_UNICODE is not set
-USE_UNICODE=0
-if [[ -z "${NO_UNICODE:-}" ]] && [[ -t 1 ]] && command -v locale >/dev/null 2>&1; then
-  if locale charmap 2>/dev/null | grep -qi 'utf-8'; then
-    USE_UNICODE=1
-  fi
-fi
-
+# Force ASCII for maximum compatibility across all consoles.
+# No Unicode symbols to avoid mojibake on non-UTF-8 terminals.
 SEP_CHAR='-'
 DASH='-'
 OK='OK'
 WARN='WARN'
 INFO='INFO'
 ERR='ERROR'
-if [[ "$USE_UNICODE" -eq 1 ]]; then
-  SEP_CHAR='━'
-  DASH='—'
-  OK='✅'
-  WARN='⚠️'
-  INFO='ℹ️'
-  ERR='❌'
-fi
 
 print_sep() {
   # Cap width to 80 cols to avoid ultra-long bars in some consoles
@@ -65,27 +49,23 @@ echo ""
 print_h1 "BasedNode install script"
 
 ###############################################################################
-# STEP 1 — Sudo
+# STEP 1 — Prerequisites (sudo + environment checks)
 ###############################################################################
 echo ""
-print_h2 "STEP 1 $DASH Checking sudo access…"
+print_h2 "STEP 1 $DASH Prerequisites (sudo + environment checks)"
+
+# Sudo check
 if ! sudo -v; then
   say_err "Wrong password or sudo failed multiple times. Exiting."
   exit 1
 fi
 say_ok "Sudo access confirmed."
 
-###############################################################################
-# STEP 1.5 — Environment checks
-###############################################################################
-echo ""
-print_h2 "STEP 1.5 $DASH Environment checks (WSL & Ubuntu)"
+# WSL/Ubuntu checks
 if ! grep -qi microsoft /proc/version; then
   say_err "This installer is intended for Windows Subsystem for Linux (WSL). Aborting."
   exit 1
 fi
-# Detect WSL by checking /proc/version for "microsoft" (case-insensitive).
-
 . /etc/os-release || true
 if [ "${VERSION_ID:-}" != "22.04" ]; then
   say_warn "Ubuntu ${VERSION_ID:-unknown} detected. This guide is tested on 22.04 LTS. Continuing anyway."
@@ -96,7 +76,7 @@ say_ok "WSL/Ubuntu checks passed."
 # STEP 2 — Base packages
 ###############################################################################
 echo ""
-print_h2 "STEP 2 $DASH Updating system and installing base tools…"
+print_h2 "STEP 2 $DASH Updating system and installing base tools..."
 DEPS=(software-properties-common curl git clang build-essential libssl-dev pkg-config libclang-dev protobuf-compiler jq)
 MISSING=()
 for pkg in "${DEPS[@]}"; do
@@ -118,11 +98,11 @@ say_ok "System updated and packages installed."
 # STEP 3 — Rust toolchain (nightly + WASM)
 ###############################################################################
 echo ""
-print_h2 "STEP 3 $DASH Checking Rust toolchain (nightly required)…"
+print_h2 "STEP 3 $DASH Checking Rust toolchain (nightly required)..."
 PINNED_NIGHTLY="nightly-2025-01-07"   # Pin to reduce upstream breakage
 
 if ! command -v rustup >/dev/null 2>&1; then
-  say_info "Rustup not found. Installing rustup and Rust nightly…"
+  say_info "Rustup not found. Installing rustup and Rust nightly..."
   rm -f rustup-init.sh rustup-install.log
   curl -sSf -o rustup-init.sh https://sh.rustup.rs
   chmod +x rustup-init.sh
@@ -132,11 +112,11 @@ if ! command -v rustup >/dev/null 2>&1; then
   SUCCESS=false
   for attempt in $(seq 1 $MAX_ATTEMPTS); do
     DELAY=$((attempt * 10))
-    say_info "Installing Rust (attempt $attempt/$MAX_ATTEMPTS)…"
+    say_info "Installing Rust (attempt $attempt/$MAX_ATTEMPTS)..."
     if ./rustup-init.sh -y --default-toolchain "$PINNED_NIGHTLY" --no-modify-path >"$LOG_FILE" 2>&1; then
       SUCCESS=true; break
     else
-      say_warn "Attempt $attempt failed. Retrying in $DELAY seconds…"
+      say_warn "Attempt $attempt failed. Retrying in $DELAY seconds..."
       sleep $DELAY
     fi
   done
@@ -148,8 +128,8 @@ if ! command -v rustup >/dev/null 2>&1; then
   fi
 
   # Ensure PATH for cargo
-  if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
-    echo 'source $HOME/.cargo/env' >> ~/.bashrc
+  if ! grep -q 'source $HOME/.cargo/env' "$HOME/.bashrc"; then
+    echo 'source $HOME/.cargo/env' >> "$HOME/.bashrc"
   fi
   # shellcheck disable=SC1090
   source "$HOME/.cargo/env"
@@ -159,15 +139,15 @@ else
     say_info "Installing pinned nightly toolchain: $PINNED_NIGHTLY"
     rustup toolchain install "$PINNED_NIGHTLY"
   fi
-  if ! grep -q 'source $HOME/.cargo/env' ~/.bashrc; then
-    echo 'source $HOME/.cargo/env' >> ~/.bashrc
+  if ! grep -q 'source $HOME/.cargo/env' "$HOME/.bashrc"; then
+    echo 'source $HOME/.cargo/env' >> "$HOME/.bashrc"
   fi
   # shellcheck disable=SC1090
   source "$HOME/.cargo/env"
 fi
 
 NIGHTLY_VERSION="$PINNED_NIGHTLY"
-say_info "Ensuring WASM target for $NIGHTLY_VERSION…"
+say_info "Ensuring WASM target for $NIGHTLY_VERSION..."
 if ! rustup target list --toolchain "$NIGHTLY_VERSION" | grep -q 'wasm32-unknown-unknown (installed)'; then
   rustup target add wasm32-unknown-unknown --toolchain "$NIGHTLY_VERSION"
 fi
@@ -182,17 +162,17 @@ say_ok "Rust nightly ($NIGHTLY_VERSION) installed and ready."
 # STEP 4 — Clone & build
 ###############################################################################
 echo ""
-print_h2 "STEP 4 $DASH Cloning and building BasedNode…"
+print_h2 "STEP 4 $DASH Cloning and building BasedNode..."
 cd "$HOME"
 
 if [ -d "basednode" ]; then
-  say_info "Folder 'basednode' exists. Updating repo…"
+  say_info "Folder 'basednode' exists. Updating repo..."
   cd basednode
   MAX_PULL_ATTEMPTS=3
   PULL_SUCCESS=false
   for attempt in $(seq 1 $MAX_PULL_ATTEMPTS); do
     if git pull; then PULL_SUCCESS=true; break
-    else say_warn "git pull failed (attempt $attempt). Retrying in 10s…"; sleep 10; fi
+    else say_warn "git pull failed (attempt $attempt). Retrying in 10s..."; sleep 10; fi
   done
   if ! $PULL_SUCCESS; then
     say_err "Failed to update BasedNode repository after $MAX_PULL_ATTEMPTS attempts."
@@ -203,7 +183,7 @@ else
   CLONE_SUCCESS=false
   for attempt in $(seq 1 $MAX_CLONE_ATTEMPTS); do
     if git clone --branch "$REPO_BRANCH" "$REPO_URL"; then CLONE_SUCCESS=true; break
-    else say_warn "Git clone failed (attempt $attempt). Retrying in 10s…"; sleep 10; fi
+    else say_warn "Git clone failed (attempt $attempt). Retrying in 10s..."; sleep 10; fi
   done
   if ! $CLONE_SUCCESS; then
     say_err "Failed to clone BasedNode repository after $MAX_CLONE_ATTEMPTS attempts."
@@ -212,11 +192,11 @@ else
   cd basednode
 fi
 
-say_info "Building BasedNode… (this may take several minutes)"
+say_info "Building BasedNode... (this may take several minutes)"
 if cargo +"$NIGHTLY_VERSION" build --release -j "$(nproc)" | tee "$BUILD_LOG"; then
   say_ok "Build finished."
 else
-  say_warn "Build failed. Attempting 'cargo clean' and rebuild with -j 1…"
+  say_warn "Build failed. Attempting 'cargo clean' and rebuild with -j 1..."
   cargo clean
   if ! cargo +"$NIGHTLY_VERSION" build --release -j 1 | tee -a "$BUILD_LOG"; then
     say_err "Build failed even after clean. See '$BUILD_LOG' for details."
@@ -236,12 +216,12 @@ say_ok "BasedNode binary installed globally."
 mkdir -p "$WORKDIR"
 
 ###############################################################################
-# STEP 4.5 — Chain spec
+# STEP 5 — Chain spec
 ###############################################################################
 echo ""
-print_h2 "STEP 4.5 $DASH Ensuring chain spec (mainnet1_raw.json)"
+print_h2 "STEP 5 $DASH Ensuring chain spec (mainnet1_raw.json)"
 if [ ! -f "$SPEC_PATH" ]; then
-  say_info "mainnet1_raw.json not found locally. Downloading from official repo…"
+  say_info "mainnet1_raw.json not found locally. Downloading from official repo..."
   mkdir -p "$WORKDIR"
   if ! curl -fL -o "$SPEC_PATH" "$SPEC_URL"; then
     say_err "Unable to download chain spec. Check your network or try again later."
@@ -252,10 +232,10 @@ fi
 say_ok "Chain spec ready at: $SPEC_PATH"
 
 ###############################################################################
-# STEP 5 — Aliases
+# STEP 6 — Aliases
 ###############################################################################
 echo ""
-print_h2 "STEP 5 $DASH Creating aliases for running BasedNode"
+print_h2 "STEP 6 $DASH Creating aliases for running BasedNode"
 
 BACKUP_FILE="$HOME/.bashrc.bak.$(date +%Y%m%d%H%M%S)"
 cp "$HOME/.bashrc" "$BACKUP_FILE"
@@ -337,13 +317,13 @@ cat "$WORKDIR/BASENODE_COMMANDS.txt"
 echo ""
 
 ###############################################################################
-# STEP 6 — Final foreground run
+# STEP 7 — Final foreground run
 ###############################################################################
-print_h2 "STEP 6 $DASH Running BasedNode in foreground"
+print_h2 "STEP 7 $DASH Running BasedNode in foreground"
 
 say_ok "BasedNode installation completed!"
 say_info "Your node will sync and connect automatically."
-say_warn "RPC lets other programs (or people) control your node. Do NOT open RPC to the Internet unless you know what you’re doing."
+say_warn "RPC lets other programs (or people) control your node. Do NOT open RPC to the Internet unless you know what you are doing."
 say_info "To stop BasedNode, press CTRL+C anytime."
 say_info "Next time, use 'basednode-run' (foreground) or 'basednode-run-bg' (background)."
 
