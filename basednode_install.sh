@@ -5,10 +5,9 @@ set -euo pipefail
 VERSION="0.1.3"
 
 ###############################################################################
-# Pretty printing helpers (robust ASCII-only)
+# Pretty-print helpers (ASCII only for maximum console compatibility)
+# Avoid Unicode to prevent mojibake on non-UTF8 terminals.
 ###############################################################################
-# Force ASCII for maximum compatibility across all consoles.
-# No Unicode symbols to avoid mojibake on non-UTF-8 terminals.
 SEP_CHAR='-'
 DASH='-'
 OK='OK'
