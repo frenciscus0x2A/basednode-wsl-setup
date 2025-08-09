@@ -379,6 +379,28 @@ alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
 EOF
 
+# Create local help file for 'basednode-help'
+tee "$WORKDIR/BASENODE_COMMANDS.txt" >/dev/null <<'TXT'
+BasedNode quick commands
+
+Foreground:
+  basednode-run           # run the node in foreground with safe local RPC
+Background:
+  basednode-run-bg        # run the node in background (logs appended)
+  node-logs               # tail last 500 lines and follow the log
+  stop-node               # stop any running basednode process
+  restart-node            # stop then start in foreground
+
+Environment overrides (optional):
+  BASEDNODE_NAME=MyNode
+  BASED_SPEC=$HOME/basednode/mainnet1_raw.json
+  BASED_BOOT=/dns/mainnet.basedaibridge.com/tcp/30333/p2p/...
+  BASED_LOG=$HOME/basednode/basednode.log
+
+Tip:
+  You can also put overrides in ~/.config/basednode-run.env
+TXT
+
 say_ok "Wrappers installed. Commands ready: basednode-run, basednode-run-bg, node-logs, stop-node, restart-node (args passthrough supported)."
 
 ###############################################################################
