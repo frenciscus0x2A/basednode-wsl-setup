@@ -403,6 +403,7 @@ set +o pipefail
 basednode \
   --name "${BASEDNODE_NAME:-MyBasedNode}" \
   --chain "$SPEC_PATH" \
+  --rpc-listen-addr 127.0.0.1:9933 \
   --rpc-methods Safe \
   --rpc-cors=none \
   --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
