@@ -232,49 +232,143 @@ fi
 say_ok "Chain spec ready at: $SPEC_PATH"
 
 ###############################################################################
-# STEP 6 — Aliases
+# STEP 6 — Aliases + wrapper commands (work immediately, safer & flexible)
 ###############################################################################
 echo ""
-print_h2 "STEP 6 $DASH Creating aliases for running BasedNode"
+print_h2 "STEP 6 $DASH Creating commands and aliases"
 
 BACKUP_FILE="$HOME/.bashrc.bak.$(date +%Y%m%d%H%M%S)"
 cp "$HOME/.bashrc" "$BACKUP_FILE"
 say_info "Backup of ~/.bashrc saved to $BACKUP_FILE"
 
-# Clean previous BasedNode alias block (idempotent re-run).
-sed -i '/# === BasedNode aliases ===/,/# ========================/d' "$HOME/.bashrc"
+# Common env (defaults; can be overridden by ~/.config/basednode-run.env)
+BASED_SPEC="${HOME}/basednode/mainnet1_raw.json"
+BASED_BOOT="/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh"
+BASED_LOG="${HOME}/basednode/basednode.log"
+mkdir -p "$WORKDIR" "${HOME}/.config"
 
-# Updated alias block (add/remove here ONLY)
+# --- Write wrappers in /usr/local/bin (no need to 'source ~/.bashrc') ---
+sudo tee /usr/local/bin/basednode-run >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+set -o pipefail
+
+# Load optional user config
+CONF="${HOME}/.config/basednode-run.env"
+[[ -f "$CONF" ]] && source "$CONF"
+
+# Defaults if not provided in env/config
+: "${BASED_SPEC:=${HOME}/basednode/mainnet1_raw.json}"
+: "${BASED_BOOT:=/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh}"
+: "${BASED_LOG:=${HOME}/basednode/basednode.log}"
+
+mkdir -p "$(dirname "$BASED_LOG")"
+
+# Support multiple bootnodes (comma- or whitespace-separated)
+IFS=',' read -r -a _BN_ARR <<< "${BASED_BOOT// /,}"
+BOOT_ARGS=()
+for bn in "${_BN_ARR[@]}"; do
+  [[ -n "$bn" ]] && BOOT_ARGS+=( --bootnodes "$bn" )
+done
+
+# Bind RPC explicitly to loopback for safety; expose Prometheus only locally.
+exec basednode \
+  --name "${BASEDNODE_NAME:-MyBasedNode}" \
+  --chain "$BASED_SPEC" \
+  --rpc-listen-addr 127.0.0.1:9933 \
+  --rpc-methods Safe \
+  --rpc-cors=none \
+  "${BOOT_ARGS[@]}" \
+  --log info \
+  "$@" 2>&1 \
+| tee -a "$BASED_LOG" \
+| grep -Ev "Successfully ran block step.|Not the block to update emission values."
+WRAP
+sudo chmod +x /usr/local/bin/basednode-run
+
+sudo tee /usr/local/bin/basednode-run-bg >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+set -o pipefail
+
+CONF="${HOME}/.config/basednode-run.env"
+[[ -f "$CONF" ]] && source "$CONF"
+
+: "${BASED_SPEC:=${HOME}/basednode/mainnet1_raw.json}"
+: "${BASED_BOOT:=/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh}"
+: "${BASED_LOG:=${HOME}/basednode/basednode.log}"
+
+mkdir -p "$(dirname "$BASED_LOG")"
+
+IFS=',' read -r -a _BN_ARR <<< "${BASED_BOOT// /,}"
+BOOT_ARGS=()
+for bn in "${_BN_ARR[@]}"; do
+  [[ -n "$bn" ]] && BOOT_ARGS+=( --bootnodes "$bn" )
+done
+
+nohup basednode \
+  --name "${BASEDNODE_NAME:-MyBasedNode}" \
+  --chain "$BASED_SPEC" \
+  --rpc-listen-addr 127.0.0.1:9933 \
+  --rpc-methods Safe \
+  --rpc-cors=none \
+  "${BOOT_ARGS[@]}" \
+  --log info \
+  "$@" >> "$BASED_LOG" 2>&1 &
+
+echo $! > "${HOME}/basednode/basednode.pid"
+echo "Started in background (PID $(cat "${HOME}/basednode/basednode.pid"))"
+WRAP
+sudo chmod +x /usr/local/bin/basednode-run-bg
+
+sudo tee /usr/local/bin/node-logs >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+: "${BASED_LOG:=${HOME}/basednode/basednode.log}"
+mkdir -p "$(dirname "$BASED_LOG")"
+exec tail -n 500 -f "$BASED_LOG"
+WRAP
+sudo chmod +x /usr/local/bin/node-logs
+
+sudo tee /usr/local/bin/stop-node >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+if pgrep -f "[b]asednode" >/dev/null; then
+  pkill -f basednode && echo "Node stopped."
+else
+  echo "No node running."
+fi
+WRAP
+sudo chmod +x /usr/local/bin/stop-node
+
+sudo tee /usr/local/bin/restart-node >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+stop-node || true
+sleep 1
+exec basednode-run "$@"
+WRAP
+sudo chmod +x /usr/local/bin/restart-node
+
+# Optional: uninstall helper
+sudo tee /usr/local/bin/basednode-uninstall-wrappers >/dev/null <<'WRAP'
+#!/usr/bin/env bash
+set -euo pipefail
+for f in basednode-run basednode-run-bg node-logs stop-node restart-node; do
+  sudo rm -f "/usr/local/bin/$f"
+done
+echo "Wrappers removed."
+WRAP
+sudo chmod +x /usr/local/bin/basednode-uninstall-wrappers
+
+# --- Aliases (bonus; handy in interactive shells) ---
+sed -i '/# === BasedNode aliases ===/,/# ========================/d' "$HOME/.bashrc"
 cat <<'EOF' >> "$HOME/.bashrc"
 
 # === BasedNode aliases ===
-# Centralize spec/bootnode/log to make updates trivial in one place.
-BASED_SPEC="$HOME/basednode/mainnet1_raw.json"
-BASED_BOOT="/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh"
-BASED_LOG="$HOME/basednode/basednode.log"
-
-alias basednode-run='(basednode \
-  --name "${BASEDNODE_NAME:-MyBasedNode}" \
-  --chain "$BASED_SPEC" \
-  --rpc-methods Safe \
-  --rpc-cors=none \
-  --bootnodes "$BASED_BOOT" \
-  --log info 2>&1 | tee -a "$BASED_LOG" | grep -Ev "Successfully ran block step.|Not the block to update emission values.")'
-# Foreground run with filtered logs and persistent log file.
-
-alias basednode-run-bg='nohup basednode \
-  --name "${BASEDNODE_NAME:-MyBasedNode}" \
-  --chain "$BASED_SPEC" \
-  --rpc-methods Safe \
-  --rpc-cors=none \
-  --bootnodes "$BASED_BOOT" \
-  --log info >> "$BASED_LOG" 2>&1 & echo $! > "$HOME/basednode/basednode.pid" && echo "Started in background (PID $(cat $HOME/basednode/basednode.pid))"'
-# Background execution with nohup; PID stored for reference.
-
-alias stop-node='if pgrep -f "basednode"; then pkill -f basednode && echo "Node stopped."; else echo "No node running."; fi'
-alias restart-node='stop-node; sleep 1; basednode-run'
-alias node-logs='tail -n 500 -f "$BASED_LOG"'
-# View last 500 log lines and follow updates in real-time.
+export BASED_SPEC="$HOME/basednode/mainnet1_raw.json"
+export BASED_BOOT="/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh"
+export BASED_LOG="$HOME/basednode/basednode.log"
 
 alias check-health='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_health","params":[]}'\'' | jq'
 alias check-peers='curl -s http://127.0.0.1:9933 -H "Content-Type: application/json" -d '\''{"id":1,"jsonrpc":"2.0","method":"system_peers","params":[]}'\'' | jq'
@@ -286,35 +380,7 @@ alias basednode-help='cat ~/basednode/BASENODE_COMMANDS.txt'
 # ========================
 EOF
 
-# Generate the unique help file (source of truth for all aliases).
-cat <<'DOC' > "$WORKDIR/BASENODE_COMMANDS.txt"
--------------------------------------------------------------------------------
-BasedNode — Useful commands (aliases)
--------------------------------------------------------------------------------
-basednode-run        # Start BasedNode with filtered logs
-basednode-run-bg     # Start BasedNode in background (nohup)
-stop-node            # Stop the running node
-restart-node         # Restart the node
-node-logs            # View node logs (background mode)
-check-health         # Check node health (RPC)
-check-peers          # List connected peers
-check-sync           # Check blockchain sync status
-check-version        # Show node software version
-check-pending        # Show pending extrinsics
-node-peerid          # Show your node's Peer ID
-basednode-help       # Display this help
--------------------------------------------------------------------------------
-DOC
-
-# Reload aliases for this session (so they’re usable immediately).
-# shellcheck disable=SC1090
-source "$HOME/.bashrc"
-say_ok "Aliases added."
-
-echo ""
-print_h2 "INFO $DASH How to use your new BasedNode aliases"
-cat "$WORKDIR/BASENODE_COMMANDS.txt"
-echo ""
+say_ok "Wrappers installed. Commands ready: basednode-run, basednode-run-bg, node-logs, stop-node, restart-node (args passthrough supported)."
 
 ###############################################################################
 # STEP 7 — Final foreground run
