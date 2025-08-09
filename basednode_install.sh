@@ -392,7 +392,23 @@ say_warn "RPC lets other programs (or people) control your node. Do NOT open RPC
 say_info "To stop BasedNode, press CTRL+C anytime."
 say_info "Next time, use 'basednode-run' (foreground) or 'basednode-run-bg' (background)."
 
-BASED_LOG="$WORKDIR/basednode.log"
+# Load optional user config to mirror wrappers behavior
+CONF="${HOME}/.config/basednode-run.env"
+[[ -f "$CONF" ]] && source "$CONF"
+
+# Defaults if not provided in env/config
+: "${BASED_SPEC:=${HOME}/basednode/mainnet1_raw.json}"
+: "${BASED_BOOT:=/dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh}"
+: "${BASED_LOG:=${WORKDIR}/basednode.log}"
+
+mkdir -p "$(dirname "$BASED_LOG")"
+
+# Support multiple bootnodes (comma- or whitespace-separated)
+IFS=',' read -r -a _BN_ARR <<< "${BASED_BOOT// /,}"
+BOOT_ARGS=()
+for bn in "${_BN_ARR[@]}"; do
+  [[ -n "$bn" ]] && BOOT_ARGS+=( --bootnodes "$bn" )
+done
 
 # Make the log-filtering pipeline robust under -e/pipefail:
 # - grep -Ev returns 1 when it filters out all lines (not an error) and 2 on real errors.
@@ -402,11 +418,11 @@ set +o pipefail
 
 basednode \
   --name "${BASEDNODE_NAME:-MyBasedNode}" \
-  --chain "$SPEC_PATH" \
+  --chain "$BASED_SPEC" \
   --rpc-listen-addr 127.0.0.1:9933 \
   --rpc-methods Safe \
   --rpc-cors=none \
-  --bootnodes /dns/mainnet.basedaibridge.com/tcp/30333/p2p/12D3KooWCQy4hiiA9tHxvQ2PPaSY3mUM6NkMnbsYf2v4FKbLAtUh \
+  "${BOOT_ARGS[@]}" \
   --log info 2>&1 \
 | tee -a "$BASED_LOG" \
 | grep -Ev "Successfully ran block step.|Not the block to update emission values."
