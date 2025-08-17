@@ -8,8 +8,6 @@ chmod +x basednode_install.sh
 ./basednode_install.sh
 ```
 
-```
-
 ---
 
 ## 🛠️ What this script does
@@ -30,7 +28,7 @@ chmod +x basednode_install.sh
 
 ## ✅ After install
 
-Your node will be **built, installed, and syncing**.
+Your node will be **built, installed, and syncing**.  
 Use these commands:
 
 - `based-run` → run in foreground
@@ -42,4 +40,3 @@ Use these commands:
 ---
 
 **Author:** frenciscus_0x2A
-```
