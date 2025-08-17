@@ -1,6 +1,6 @@
-## 📦 Install in 3 steps
+# 📦 Install BasedNode (WSL)
 
-On **Windows**, open the **Ubuntu terminal window**, then copy-paste:
+On **Windows**, open your **Ubuntu terminal (WSL)** and run:
 
 ```bash
 wget https://raw.githubusercontent.com/frenciscus0x2A/basednode-wsl-setup/main/basednode_install.sh -O basednode_install.sh
@@ -8,19 +8,38 @@ chmod +x basednode_install.sh
 ./basednode_install.sh
 ```
 
-> **What this script does:**
->
-> - Checks sudo access
-> - Verifies WSL and Ubuntu version
-> - Updates your system and installs missing dependencies
-> - Installs pinned Rust nightly (+ WASM target)
-> - Clones or updates BasedNode repository
-> - Ensures chain specification file is present
-> - Builds BasedNode (with retry on failure)
-> - Installs the binary globally
-> - Creates useful aliases and helper commands
-> - Displays available aliases after installation
-> - Launches the node with filtered logs (foreground or background)
+```
 
-✅ At the end: your node will be running and syncing!<br>
+---
+
+## 🛠️ What this script does
+
+- Checks sudo access
+- Verifies WSL + Ubuntu version
+- Updates system + installs dependencies
+- Installs pinned Rust nightly (+ WASM target)
+- Clones/updates BasedNode repo
+- Ensures chain spec file is present
+- Builds BasedNode (with retry on failure)
+- Installs binary globally
+- Creates config + helper aliases
+- Shows available aliases after install
+- Starts node (foreground or background) with filtered logs
+
+---
+
+## ✅ After install
+
+Your node will be **built, installed, and syncing**.
+Use these commands:
+
+- `based-run` → run in foreground
+- `based-run-bg` → run in background
+- `based-logs` → view logs
+- `based-stop` / `based-restart` → control node
+- `based-status`, `based-sync`, `based-peers`, `based-version`, `based-peerid` → quick checks
+
+---
+
 **Author:** frenciscus_0x2A
+```
