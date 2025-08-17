@@ -47,4 +47,4 @@ _May your syncs be smooth. GLHF frens 🐸_
 
 ## 📜 License
 
-CC0 1.0 — Public Domain Dedication.
+CC0 — Public Domain Dedication.

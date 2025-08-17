@@ -45,4 +45,4 @@ Use these commands:
 
 ## 📜 License
 
-CC0 1.0 — Public Domain Dedication.
+CC0 — Public Domain Dedication.
