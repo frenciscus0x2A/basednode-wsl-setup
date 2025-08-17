@@ -5,7 +5,7 @@
 
 Run a BasedNode on **Ubuntu with WSL (Windows Subsystem for Linux)**.  
 Beginner-friendly, quick to install, and easy to remove.  
-⏱ Typical install: ~40 min
+⏱ Typical install: ~48 min
 
 ---
 
