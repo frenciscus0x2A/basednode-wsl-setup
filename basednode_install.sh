@@ -239,7 +239,7 @@ if [ -f "$CONF" ]; then
 else
   say_info "Creating default config at $CONF"
 
-  DEFAULT_NAME="BasedWSL-$("frenciscus_test" | cut -d. -f1)"
+  DEFAULT_NAME="WSL-frenciscus_test"
   DEFAULT_BOOTNODES="$(jq -r '.bootNodes[]? // empty' "$SPEC_PATH" 2>/dev/null | paste -sd, - || true)"
 
   cat >"$CONF" <<EOC
