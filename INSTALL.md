@@ -39,10 +39,4 @@ Use these commands:
 
 ---
 
-**Author:** frenciscus_0x2A
-
----
-
-## 📜 License
-
-CC0 — Public Domain Dedication.
+**Author:** frenciscus_0x2A • **License:** CC0 — No rights reserved. Public Domain.

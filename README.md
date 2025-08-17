@@ -41,10 +41,4 @@ For public / 24-7 nodes → use a VPS or dedicated server.
 ---
 
 _May your syncs be smooth. GLHF frens 🐸_  
-**Author:** frenciscus_0x2A
-
----
-
-## 📜 License
-
-CC0 — Public Domain Dedication.
+**Author:** frenciscus_0x2A • **License:** CC0 — No rights reserved. Public Domain.
