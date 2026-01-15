@@ -40,5 +40,20 @@ For public / 24-7 nodes → use a VPS or dedicated server.
 
 ---
 
+## 🧹 Remove Ubuntu (WSL)
+
+You can remove Ubuntu and all its data at any time.
+
+To open **PowerShell**:
+- Press `Win + X`
+- Select **Windows PowerShell** or **Terminal**
+
+Then run:
+
+wsl --shutdown
+wsl --unregister Ubuntu-22.04
+
+---
+
 _May your syncs be smooth. GLHF frens 🐸_  
 **Author:** frenciscus_0x2A • **License:** CC0 — No rights reserved. Public Domain.
