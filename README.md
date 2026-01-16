@@ -49,9 +49,11 @@ To open **PowerShell**:
 - Select **Windows PowerShell** or **Terminal**
 
 Then run:
-
+```powershell
 wsl --shutdown
-wsl --unregister Ubuntu-22.04
+wsl --unregister Ubuntu-20.04
+```
+
 
 ---
 
